@@ -1,0 +1,46 @@
+networks:
+    application:
+        driver: bridge
+
+services:
+    app:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        container_name: expense-backend
+        ports:
+            - 8001:8000
+        volumes:
+            - .:/app
+        depends_on:
+            - db
+        environment:
+            - DB_HOST=mysql-db
+            - DB_DATABASE=expense_management
+            - DB_USERNAME=root
+            - DB_PASSWORD=
+        networks:
+            - application
+        entrypoint: ['/bin/sh', '-c']
+        command:
+            - |
+                composer install
+                sleep 10
+                php artisan migrate
+                php artisan serve --host=0.0.0.0 --port=8000
+
+    db:
+        image: mysql:8.0
+        container_name: mysql-db
+        volumes:
+            - ./mysql-data:/var/lib/mysql
+        environment:
+            - MYSQL_ALLOW_EMPTY_PASSWORD=yes
+            - MYSQL_DATABASE=expense_management
+        networks:
+            - application
+        healthcheck:
+            test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root"]
+            interval: 5s
+            timeout: 5s
+            retries: 5
